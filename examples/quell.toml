@@ -1,0 +1,14 @@
+# Config for the getting-started quickstart, pointed at the single
+# Postgres container it has you start with `docker run`.
+[listener]
+bind = "0.0.0.0:6432"
+protocol = "postgres"
+
+[upstream]
+addr = "127.0.0.1:55432"
+
+[policy]
+path = "examples/quickstart-policy.yaml"
+
+[admin]
+bind = "127.0.0.1:9091"

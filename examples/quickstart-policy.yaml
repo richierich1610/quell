@@ -1,0 +1,12 @@
+# A minimal, deterministic policy for the README quickstart — just enough to
+# show a blocked DELETE. See examples/policy.yaml for the full-featured
+# example (blast-radius thresholds, scopes/overrides, a freeze window) — not
+# used here on purpose, since the freeze window is time-of-day/day-of-week
+# dependent and would make the quickstart's outcome depend on when you run it.
+version: 1
+rules:
+  - id: no-unqualified-writes
+    match: { statements: [update, delete] }
+    when: { where: missing_or_tautology }
+    action: block
+    message: "UPDATE/DELETE without a selective WHERE clause is blocked."

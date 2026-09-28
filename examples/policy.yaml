@@ -1,0 +1,36 @@
+version: 1
+defaults:
+  mode: enforce
+  on_parse_error: block
+  estimation:
+    enabled: true
+    method: explain
+    count_timeout_ms: 500
+    on_estimate_failure: block
+rules:
+  - id: no-unqualified-writes
+    match: { statements: [update, delete] }
+    when: { where: missing_or_tautology }
+    action: block
+    message: "UPDATE/DELETE without a selective WHERE clause is blocked."
+  - id: blast-radius
+    match: { statements: [update, delete] }
+    when: { rows_gt: 1000, or_table_pct_gt: 10 }
+    action: block
+    message: "This statement would touch more rows than the configured blast-radius threshold."
+  - id: no-truncate-prod
+    match: { statements: [truncate, drop], databases: ["prod_*"] }
+    action: block
+    message: "TRUNCATE/DROP is blocked on production databases."
+  - id: freeze-window
+    match: { statements: [update, delete, insert, alter, drop, truncate] }
+    when:
+      time_window: { cron: "0 18 * * FRI", duration: "62h", tz: "Asia/Kolkata" }
+    action: block
+    message: "Writes are blocked during the weekend freeze window."
+scopes:
+  - principals: { users: [etl_service], cidrs: [10.0.5.0/24] }
+    exempt: [blast-radius]
+overrides:
+  allowed_users: [dba_lead, dba_oncall]
+  require_fields: [reason, ticket]

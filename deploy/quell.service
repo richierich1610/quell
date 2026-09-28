@@ -1,0 +1,42 @@
+[Unit]
+Description=Quell database guardrail proxy
+Documentation=https://github.com/richierich1610/quell
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+ExecStart=/usr/local/bin/quell --config /etc/quell/quell.toml
+Restart=on-failure
+RestartSec=2
+
+# Graceful shutdown: SIGTERM starts a connection drain with a timeout.
+# Give systemd enough room to let that finish before it escalates to
+# SIGKILL.
+KillSignal=SIGTERM
+TimeoutStopSec=40
+
+# SIGHUP triggers a policy reload rather than the default systemd behavior
+# of restarting the unit: `systemctl reload quell` sends SIGHUP without
+# restarting the process.
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Runs as a dedicated, unprivileged user — never root. Create it with:
+#   useradd --system --no-create-home --shell /usr/sbin/nologin quell
+User=quell
+Group=quell
+
+# Hardening: least privilege for a network-facing proxy that only needs to
+# read its own config/policy files and open outbound/listening sockets.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/etc/quell
+CapabilityBoundingSet=
+AmbientCapabilities=
+# Uncomment if `[listener].bind` uses a privileged port (<1024):
+# AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

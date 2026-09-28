@@ -1,0 +1,116 @@
+# Example: Quell as a sidecar in front of an app's own Postgres
+# connection, inside the same Pod. The app connects to `localhost:6432`
+# (Quell) instead of the real database directly; Quell forwards
+# allowed statements to `upstream.addr` in quell.toml (typically the
+# database's real Service DNS name, reachable from within the cluster).
+#
+# This is a reference shape, not a ready-to-apply manifest: fill in your own
+# app image/env, database host, and secret names.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quell-config
+data:
+  quell.toml: |
+    [listener]
+    bind = "0.0.0.0:6432"
+    protocol = "postgres"
+
+    [upstream]
+    # The real database, reachable from inside the cluster — a managed
+    # database's private endpoint, or another Service.
+    addr = "prod-postgres.internal:5432"
+
+    [policy]
+    path = "/etc/quell/policy.yaml"
+
+    [audit]
+    stdout = true
+
+    [admin]
+    # Loopback-only inside the Pod's network namespace — reachable from the
+    # app container via localhost, not from outside the Pod. Add
+    # [admin].token if any other workload in the cluster can reach this Pod's
+    # IP directly (see docs/THREAT_MODEL.md).
+    bind = "127.0.0.1:9091"
+
+    [estimator]
+    # A read-only credential, separate from the app's own — see
+    # docs/THREAT_MODEL.md ("the estimator's side connection").
+    connection = "host=prod-postgres.internal port=5432 user=quell_ro password=${QUELL_DB_PASSWORD} dbname=app"
+  policy.yaml: |
+    version: 1
+    rules:
+      - id: no-unqualified-writes
+        match: { statements: [update, delete] }
+        when: { where: missing_or_tautology }
+        action: block
+        message: "UPDATE/DELETE without a selective WHERE clause is blocked."
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-with-quell
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: app-with-quell }
+  template:
+    metadata:
+      labels: { app: app-with-quell }
+    spec:
+      containers:
+        - name: app
+          image: your-app:latest
+          env:
+            # The app talks to Quell, not the database directly.
+            - name: DATABASE_HOST
+              value: "127.0.0.1"
+            - name: DATABASE_PORT
+              value: "6432"
+
+        - name: quell
+          image: ghcr.io/richierich1610/quell:latest
+          args: ["--config", "/etc/quell/quell.toml"]
+          ports:
+            - containerPort: 6432
+              name: pg-proxy
+            - containerPort: 9091
+              name: admin
+          env:
+            - name: QUELL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: quell-db-credentials
+                  key: password
+          volumeMounts:
+            - name: quell-config
+              mountPath: /etc/quell
+          # /readyz reports ready once Quell's own listener is accepting
+          # connections — it does not check that [upstream].addr is
+          # actually reachable. See docs/LIMITATIONS.md's "/readyz does not
+          # check that the upstream database is reachable" for why that's
+          # deliberate, and what a misconfigured upstream looks like anyway
+          # (connections fail cleanly and get logged; the pod won't crash
+          # or crash-loop, but it won't be marked NotReady for this reason
+          # either).
+          readinessProbe:
+            httpGet: { path: /readyz, port: admin }
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: admin }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # Graceful shutdown: SIGTERM starts a drain with a
+          # timeout — give Kubernetes' own grace period enough room to let it
+          # finish rather than being SIGKILLed mid-drain.
+          terminationMessagePolicy: FallbackToLogsOnError
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 45
+      volumes:
+        - name: quell-config
+          configMap: { name: quell-config }
