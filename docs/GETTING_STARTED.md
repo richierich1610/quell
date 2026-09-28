@@ -2,7 +2,10 @@
 
 A step-by-step path from nothing installed to a production-shaped
 deployment. Each section builds on the one before it and works on its own,
-so stop wherever your setup actually needs to stop.
+so stop wherever your setup actually needs to stop. This guide introduces
+each `quell.toml` section as you need it; for every property in the file,
+what it does, its type, and its default, see
+[`docs/CONFIGURATION.md`](CONFIGURATION.md).
 
 ## 1. Prerequisites
 

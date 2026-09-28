@@ -36,6 +36,13 @@ estimation, freeze mode, the audit log, hold & approve, MCP mode, running a
 fleet, TLS, and deploying it for real. Start there if you're setting this up
 for anything beyond a demo.
 
+### ⚙️ [Configuration reference](docs/CONFIGURATION.md)
+
+Every `quell.toml` section and property: type, required or optional,
+default, and what it actually does. Unknown fields are a load error, not
+a silent no-op, so if `quell` starts without complaint, every property in
+your file is one it actually reads.
+
 ## Supported databases
 
 Quell speaks the real wire protocol, not a vendor SDK, so it works with
@@ -251,6 +258,8 @@ instances; it doesn't shard queries for you. See
   place, with why each feature exists
 - [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md): what Quell doesn't protect
   against, stated plainly
+- [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md): every `quell.toml`
+  property, in full
 - [`docs/POLICY.md`](docs/POLICY.md): the policy file format, in full
 - [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md): what's in scope, what
   isn't, and where the trust boundaries actually sit
