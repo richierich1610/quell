@@ -81,9 +81,12 @@ It's controlled entirely by who has access to the private repo the
 binaries are published to.
 
 Email richhpalgora1610@gmail.com or [open an issue](https://github.com/richierich1610/quell/issues)
-describing what you're evaluating Quell for, and you'll get an invite.
+describing what you're evaluating Quell for, and you'll get an invite to
+[richierich1610/quell-releases](https://github.com/richierich1610/quell-releases),
+the private repo the binaries and the container image are published to.
 Once you have access, downloads work exactly like any other GitHub
-release or container pull, just authenticated.
+release or container pull, just authenticated, at
+[github.com/richierich1610/quell-releases/releases](https://github.com/richierich1610/quell-releases/releases).
 
 ## Try it in five minutes
 
@@ -275,9 +278,11 @@ instances; it doesn't shard queries for you. See
 
 ## Where this stands
 
-Source isn't public. This repository carries documentation and downloadable
-releases only, kept accurate against the real, tested behavior of the
-software it describes, not a marketing description of it. No third-party
+Source isn't public. This repository carries documentation only, kept
+accurate against the real, tested behavior of the software it describes,
+not a marketing description of it. Releases live on
+[quell-releases](https://github.com/richierich1610/quell-releases) (see
+"Getting access" above). No third-party
 security audit has been done yet, and no production users beyond the
 testing that built it. That's worth knowing before you point this at
 anything that matters. Found a way around a block, freeze mode, or the

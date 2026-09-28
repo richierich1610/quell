@@ -5,15 +5,6 @@ All notable changes to Quell are documented here. Format follows
 
 ## [Unreleased]
 
-### Changed
-
-- Source is no longer publicly browsable. This repository now carries
-  user-facing documentation and downloadable releases (a binary for
-  Linux/macOS/Windows, and a container image at
-  `ghcr.io/richierich1610/quell`) only. Nothing about the software's
-  behavior, license (MIT), or documented guarantees changed; see
-  [`SECURITY.md`](SECURITY.md) for how to report an issue.
-
 ### Fixed
 
 - A real, reachable panic in the MySQL handshake relay
