@@ -1,6 +1,6 @@
 # Quell
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Restricted](https://img.shields.io/badge/License-Restricted-orange.svg)](LICENSE)
 
 **[richierich1610.github.io/quell](https://richierich1610.github.io/quell/)**
 

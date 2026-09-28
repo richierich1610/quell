@@ -5,6 +5,13 @@ All notable changes to Quell are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- License changed from MIT to a restricted-use license: run it if you
+  have access, no redistribution, resale, or sublicensing without
+  permission. MIT granted anyone who received a copy full rights to
+  redistribute it freely, which contradicted invite-gated access.
+
 ### Fixed
 
 - A real, reachable panic in the MySQL handshake relay
