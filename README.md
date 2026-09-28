@@ -60,6 +60,18 @@ optional and not started, not a gap), Oracle, and other wire protocols.
 Exact per-engine caveats (join-probe approximation, bound parameters,
 table-size sourcing): [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
+## Runs with no internet access at all
+
+Quell makes no outbound connection you didn't configure: the database
+it's proxying, and only if you explicitly set them, a Slack/Teams
+approval webhook or an audit webhook sink. No telemetry, no update
+check, no license/activation check, no phone-home of any kind. Verified
+by actually running the compiled binary, start to finish, inside a
+Docker network with a confirmed zero route to the internet. The complete
+list of every connection Quell ever makes is in
+[`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)'s "Network dependencies"
+section.
+
 ## Try it in five minutes
 
 ```bash

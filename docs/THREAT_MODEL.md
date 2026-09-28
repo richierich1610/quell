@@ -119,6 +119,38 @@ internet and the database.
   (see docs/LIMITATIONS.md), computed against possibly stale statistics on
   a side connection that can't see the client's own uncommitted state.
 
+## Network dependencies: no phone-home
+
+Quell makes no outbound connection you didn't configure. The complete
+list of places the process ever opens a connection to:
+
+- `[upstream].addr`: the database it's proxying. Required.
+- `[estimator].connection`, `[cluster].connection`, `[mcp].connection`:
+  side connections to a database, each only if that section is present
+  in `quell.toml`. Always a database the operator configured, never
+  anything Quell picks on its own.
+- `[approvals].webhook_url`, `[audit.webhook].url`: a Slack/Teams
+  incoming webhook and an audit webhook sink, respectively. Both unset
+  by default; a statement never triggers one unless the operator has
+  explicitly configured it.
+- `[admin].bind` (default `127.0.0.1:9091`): the admin API, which is
+  inbound only, but `quell freeze on/off` connects to it as a fast path
+  before falling back to a local marker file (see
+  `docs/LIMITATIONS.md`). Loopback by default, no different network than
+  the proxy is already running on.
+
+There is no telemetry, no update check, no license/activation check, no
+crash reporting, and no DNS lookup beyond resolving the addresses above,
+against whatever DNS the host already has configured, nothing
+Quell-specific. Confirmed by running the compiled binary end to end,
+startup through a real blocked and a real allowed statement through the
+admin API's audit trail, inside a Docker network with a verified
+zero-route-to-the-internet (`docker network create --internal`,
+confirmed by a plaintext outbound request to a public IP failing with
+"Network unreachable" before the real test, not just trusted from the
+flag's name). Point `[upstream].addr` at a database Quell can already
+reach, and nothing else about running it needs a route out.
+
 ## Admin API attack surface
 
 The admin API binds to `127.0.0.1` by default specifically because it
