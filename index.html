@@ -508,10 +508,11 @@
       Quell
     </a>
     <nav class="nav-links" id="navLinks">
+      <a href="#who-its-for">Who it's for</a>
       <a href="#how-it-works">How it works</a>
       <a href="#features">Features</a>
-      <a href="#databases">Databases</a>
       <a href="#trust">Trust &amp; limits</a>
+      <a href="#getting-access">Access</a>
       <a href="https://github.com/richierich1610/quell/blob/main/docs/GETTING_STARTED.md">Docs</a>
     </nav>
     <div class="nav-cta">
@@ -530,7 +531,7 @@
   <section class="hero wrap">
     <div class="eyebrow">
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1l6 2.7v4.8c0 3.9-2.6 7.1-6 7.9-3.4-.8-6-4-6-7.9V3.7L8 1z"/></svg>
-      Prebuilt binaries · MIT licensed · no third-party audit yet
+      Free, by invite · MIT licensed · no third-party audit yet
     </div>
     <h1>Stop a bad statement <span class="accent">before</span> it reaches your database.</h1>
     <p class="hero-sub">
@@ -539,11 +540,11 @@
       how many rows it would actually touch, instead of just pattern-matching the SQL text.
     </p>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="https://github.com/richierich1610/quell">
+      <a class="btn btn-primary" href="#getting-access">Request access →</a>
+      <a class="btn btn-ghost" href="https://github.com/richierich1610/quell">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
         View on GitHub
       </a>
-      <a class="btn btn-ghost" href="https://github.com/richierich1610/quell/blob/main/docs/GETTING_STARTED.md">Get started in 5 minutes →</a>
     </div>
 
     <div class="terminal">
@@ -559,6 +560,45 @@
 <span class="err">ERROR:  UPDATE/DELETE without a selective WHERE clause is blocked.</span>
 <span class="err">DETAIL:  matched rule(s): no-unqualified-writes</span>
 <span class="comment"># the qualified delete went through untouched. the other one never reached postgres.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="who-its-for">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Who it's for</div>
+        <h2>Two teams that shouldn't touch prod directly</h2>
+        <p class="section-sub">Both already have valid credentials. That's exactly the problem: a valid credential isn't the same thing as a safe statement.</p>
+      </div>
+      <div class="features-grid">
+
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="7" width="14" height="11" rx="3"/><circle cx="9" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><path d="M12 7V4"/><circle cx="12" cy="3" r="1" fill="currentColor" stroke="none"/></svg></div>
+          <h3>AI agents</h3>
+          <p>Give an agent a raw connection string and it has exactly as much access as anyone who has the password, with none of a human's hesitation before running something destructive. Point it at Quell over MCP instead, and every tool call goes through the same analyzer, policy engine, and blast-radius estimator a wire-protocol client does. No separate, weaker ruleset for automation, and freeze mode overrides an agent's own instructions, not just its intentions.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 13v-1a8 8 0 0116 0v1"/><rect x="3" y="13" width="4" height="6" rx="2"/><rect x="17" y="13" width="4" height="6" rx="2"/><path d="M20 19v1a2 2 0 01-2 2h-3"/></svg></div>
+          <h3>Production support &amp; on-call</h3>
+          <p>A support engineer running a one-off fix at 2am under incident pressure makes the same category of mistake an agent does: a missing <code>WHERE</code>, the wrong environment, a row count nobody had time to check first. Quell estimates the real blast radius and blocks the ones that matter before they run, and leaves a hash-chained record of exactly what happened for the incident review afterward either way.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="getting-access">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Getting access</div>
+        <h2>Free to run. Access is by invitation while this is pre-1.0.</h2>
+        <p class="section-sub">Everything on this page, and every doc linked from it, is public. Running the software itself isn't: nothing at runtime checks a license or calls home, access is controlled entirely by who can reach the private repo the binaries and container image are published to.</p>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <a class="btn btn-primary" href="mailto:richhpalgora1610@gmail.com?subject=Quell%20access%20request">Email for an invite →</a>
+        <a class="btn btn-ghost" href="https://github.com/richierich1610/quell/issues" target="_blank" rel="noopener">Or open an issue</a>
       </div>
     </div>
   </section>
@@ -776,13 +816,16 @@
       <div class="kicker" style="text-align:center">Get started</div>
       <h2>Running in five minutes, against a real test database</h2>
       <p class="section-sub">
-        <code>docker compose up</code>, point Quell at it, connect with <code>psql</code>
-        instead of the database directly. No signup, no account, nothing to configure beyond
-        one <code>quell.toml</code>.
+        Once you have access: <code>docker compose up</code>, point Quell at it, connect
+        with <code>psql</code> instead of the database directly. Nothing to configure
+        beyond one <code>quell.toml</code>.
       </p>
       <div class="cta-actions">
-        <a class="btn btn-primary" href="https://github.com/richierich1610/quell/blob/main/docs/GETTING_STARTED.md">
-          Read the getting started guide →
+        <a class="btn btn-primary" href="#getting-access">
+          Request access →
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/richierich1610/quell/blob/main/docs/GETTING_STARTED.md">
+          Read the getting started guide
         </a>
         <a class="btn btn-ghost" href="https://github.com/richierich1610/quell">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -810,8 +853,8 @@
       <div class="footer-col">
         <h5>Product</h5>
         <ul>
+          <li><a href="#who-its-for">Who it's for</a></li>
           <li><a href="#features">Features</a></li>
-          <li><a href="#databases">Supported databases</a></li>
           <li><a href="#how-it-works">How it works</a></li>
           <li><a href="#trust">Trust &amp; limits</a></li>
         </ul>
@@ -820,16 +863,16 @@
         <h5>Docs</h5>
         <ul>
           <li><a href="https://github.com/richierich1610/quell/blob/main/docs/GETTING_STARTED.md">Getting started</a></li>
+          <li><a href="https://github.com/richierich1610/quell/blob/main/docs/CONFIGURATION.md">Configuration reference</a></li>
           <li><a href="https://github.com/richierich1610/quell/blob/main/docs/POLICY.md">Policy reference</a></li>
           <li><a href="https://github.com/richierich1610/quell/blob/main/docs/THREAT_MODEL.md">Threat model</a></li>
-          <li><a href="https://github.com/richierich1610/quell/blob/main/docs/BENCHMARKS.md">Benchmarks</a></li>
         </ul>
       </div>
       <div class="footer-col">
         <h5>Project</h5>
         <ul>
           <li><a href="https://github.com/richierich1610/quell">GitHub</a></li>
-          <li><a href="https://github.com/richierich1610/quell/releases">Releases</a></li>
+          <li><a href="#getting-access">Getting access</a></li>
           <li><a href="https://github.com/richierich1610/quell/blob/main/SECURITY.md">Security policy</a></li>
           <li><a href="https://github.com/richierich1610/quell/blob/main/LICENSE">MIT License</a></li>
         </ul>
@@ -837,7 +880,7 @@
     </div>
     <div class="footer-bottom">
       <span>© 2026 Quell. No production users beyond the testing that built it — said here plainly.</span>
-      <span>Documentation and downloads: <a href="https://github.com/richierich1610/quell" style="color:var(--text-dim)">github.com/richierich1610/quell</a></span>
+      <span>Docs: <a href="https://github.com/richierich1610/quell" style="color:var(--text-dim)">github.com/richierich1610/quell</a> · Access: <a href="mailto:richhpalgora1610@gmail.com" style="color:var(--text-dim)">richhpalgora1610@gmail.com</a></span>
     </div>
   </div>
 </footer>
