@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quell — a database guardrail proxy</title>
+<meta name="description" content="Quell sits between anyone talking to your database — human, app, or AI agent — and the database itself. It estimates real blast radius before deciding, not just pattern-matching SQL text.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23131722'/%3E%3Cpath d='M12 4l7 3.2v5.6c0 4.6-3 8.3-7 9.2-4-.9-7-4.6-7-9.2V7.2L12 4z' fill='none' stroke='%2338d6c4' stroke-width='1.6'/%3E%3Cpath d='M9.3 12.2l1.9 1.9 3.6-3.9' fill='none' stroke='%2338d6c4' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg-raised: #12151c;
+    --bg-card: #14171f;
+    --border: #23272f;
+    --border-soft: #1b1e26;
+    --text: #e7e9ee;
+    --text-dim: #9aa1af;
+    --text-dimmer: #6b7280;
+    --accent: #38d6c4;
+    --accent-soft: rgba(56, 214, 196, 0.12);
+    --amber: #f0a742;
+    --red: #e2584c;
+    --green: #4ec98b;
+    --radius: 10px;
+    --max: 1120px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+
+  code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  .wrap {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ---------- Nav ---------- */
+  header.nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(10, 12, 16, 0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    max-width: var(--max);
+    margin: 0 auto;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 18px;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+  }
+  .brand svg { flex-shrink: 0; }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    font-size: 14.5px;
+    color: var(--text-dim);
+  }
+  .nav-links a { text-decoration: none; transition: color .15s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .nav-toggle {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14.5px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform .12s, border-color .15s, background .15s;
+    white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: var(--accent);
+    color: #06201c;
+  }
+  .btn-primary:hover { background: #4ee3d1; }
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .btn-ghost:hover { border-color: #3a4150; background: var(--bg-raised); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding: 96px 0 72px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 500px;
+    background: radial-gradient(closest-side, rgba(56, 214, 196, 0.14), transparent);
+    pointer-events: none;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid rgba(56, 214, 196, 0.25);
+    padding: 6px 12px;
+    border-radius: 100px;
+    margin-bottom: 24px;
+  }
+  h1 {
+    font-size: clamp(34px, 5.5vw, 58px);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.08;
+    margin: 0 0 22px;
+    max-width: 780px;
+  }
+  h1 .accent { color: var(--accent); }
+  .hero-sub {
+    font-size: clamp(16px, 2vw, 19px);
+    color: var(--text-dim);
+    max-width: 620px;
+    margin: 0 0 36px;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 64px;
+  }
+  .hero-actions .btn { padding: 13px 22px; font-size: 15px; }
+
+  /* ---------- Terminal card ---------- */
+  .terminal {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    max-width: 780px;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,0.6);
+  }
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--bg-raised);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.r { background: #e2584c; }
+  .dot.y { background: #f0a742; }
+  .dot.g { background: #4ec98b; }
+  .terminal-title {
+    margin-left: 8px;
+    font-size: 12.5px;
+    color: var(--text-dimmer);
+  }
+  .terminal-body {
+    padding: 20px 22px 24px;
+    font-size: 13.5px;
+    line-height: 1.75;
+    overflow-x: auto;
+  }
+  .terminal-body .prompt { color: var(--text-dimmer); }
+  .terminal-body .cmd { color: var(--text); }
+  .terminal-body .out { color: var(--text-dim); display: block; }
+  .terminal-body .err { color: var(--red); display: block; }
+  .terminal-body .ok  { color: var(--green); display: block; }
+  .terminal-body .comment { color: var(--text-dimmer); display: block; }
+
+  /* ---------- Sections ---------- */
+  section { padding: 88px 0; border-top: 1px solid var(--border-soft); }
+  .section-head { max-width: 640px; margin-bottom: 52px; }
+  .kicker {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  h2 {
+    font-size: clamp(26px, 3.6vw, 36px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 14px;
+  }
+  .section-sub { color: var(--text-dim); font-size: 16px; max-width: 600px; }
+
+  /* ---------- Why / incident ---------- */
+  .why-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 48px;
+    align-items: start;
+  }
+  .why-copy p { color: var(--text-dim); font-size: 16px; margin: 0 0 16px; }
+  .why-copy strong { color: var(--text); font-weight: 600; }
+  .incident-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .incident-card .tag {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--red);
+    background: rgba(226, 88, 76, 0.12);
+    border: 1px solid rgba(226, 88, 76, 0.28);
+    padding: 4px 10px;
+    border-radius: 100px;
+    margin-bottom: 14px;
+  }
+  .incident-card p { color: var(--text-dim); font-size: 14.5px; margin: 0 0 14px; }
+  .incident-card a { color: var(--accent); font-size: 13.5px; text-decoration: none; }
+  .incident-card a:hover { text-decoration: underline; }
+
+  /* ---------- Pipeline ---------- */
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+  .pipe-step {
+    flex: 1 0 150px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    margin-right: 14px;
+    position: relative;
+  }
+  .pipe-step:last-child { margin-right: 0; }
+  .pipe-step .n {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .pipe-step h4 { margin: 0 0 6px; font-size: 14.5px; font-weight: 700; }
+  .pipe-step p { margin: 0; font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+  .pipe-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--text-dimmer);
+    padding: 0 4px;
+    flex: 0 0 auto;
+  }
+
+  .decision-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 28px;
+  }
+  .decision-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .decision-chip.allow { color: var(--green); border-color: rgba(78,201,139,.3); background: rgba(78,201,139,.08); }
+  .decision-chip.warn  { color: var(--amber); border-color: rgba(240,167,66,.3); background: rgba(240,167,66,.08); }
+  .decision-chip.hold  { color: #8fb4ff; border-color: rgba(143,180,255,.3); background: rgba(143,180,255,.08); }
+  .decision-chip.block { color: var(--red); border-color: rgba(226,88,76,.3); background: rgba(226,88,76,.08); }
+
+  /* ---------- Features grid ---------- */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+  }
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    transition: border-color .15s, transform .15s;
+  }
+  .feature-card:hover { border-color: #313846; }
+  .feature-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    color: var(--accent);
+  }
+  .feature-card h3 { font-size: 15.5px; font-weight: 700; margin: 0 0 8px; }
+  .feature-card p { font-size: 13.5px; color: var(--text-dim); margin: 0; }
+
+  /* ---------- Databases ---------- */
+  .db-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+  }
+  .db-table th {
+    text-align: left;
+    padding: 12px 16px;
+    color: var(--text-dimmer);
+    font-weight: 600;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+  }
+  .db-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-soft);
+    color: var(--text-dim);
+  }
+  .db-table td:first-child { color: var(--text); font-weight: 600; }
+  .db-table tr:last-child td { border-bottom: none; }
+  .db-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow-x: auto;
+  }
+  .db-note {
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+  .db-note strong { color: var(--text); }
+
+  /* ---------- Trust ---------- */
+  .trust-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+  }
+  .trust-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    background: var(--bg-card);
+  }
+  .trust-card h3 { font-size: 15px; margin: 0 0 8px; }
+  .trust-card p { font-size: 13.5px; color: var(--text-dim); margin: 0 0 12px; }
+  .trust-card a { font-size: 13px; color: var(--accent); text-decoration: none; }
+  .trust-card a:hover { text-decoration: underline; }
+  .callout {
+    margin-top: 28px;
+    padding: 18px 20px;
+    border-radius: var(--radius);
+    border: 1px solid rgba(240, 167, 66, 0.3);
+    background: rgba(240, 167, 66, 0.06);
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+  .callout strong { color: var(--amber); }
+
+  /* ---------- CTA ---------- */
+  .cta {
+    text-align: center;
+    padding: 96px 0;
+    border-top: 1px solid var(--border-soft);
+  }
+  .cta h2 { margin-bottom: 16px; }
+  .cta .section-sub { margin: 0 auto 36px; text-align: center; }
+  .cta-actions { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--border-soft);
+    padding: 48px 0;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr repeat(3, 1fr);
+    gap: 32px;
+  }
+  .footer-brand p { color: var(--text-dimmer); font-size: 13.5px; max-width: 260px; margin: 14px 0 0; }
+  .footer-col h5 {
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dimmer);
+    margin: 0 0 14px;
+  }
+  .footer-col ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .footer-col a { font-size: 13.5px; color: var(--text-dim); text-decoration: none; }
+  .footer-col a:hover { color: var(--text); }
+  .footer-bottom {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--text-dimmer);
+  }
+
+  @media (max-width: 860px) {
+    .why-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav-links { display: none; }
+    .nav-toggle { display: flex; }
+    .nav-links.open {
+      display: flex;
+      position: absolute;
+      top: 68px;
+      left: 0;
+      right: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      padding: 16px 24px 22px;
+    }
+    .nav-links.open a { padding: 10px 0; width: 100%; }
+    section { padding: 64px 0; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) {
+    .footer-grid { grid-template-columns: 1fr; }
+    .hero { padding: 72px 0 48px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="#" class="brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <rect width="24" height="24" rx="6" fill="#131722"/>
+        <path d="M12 4l7 3.2v5.6c0 4.6-3 8.3-7 9.2-4-.9-7-4.6-7-9.2V7.2L12 4z" stroke="#38d6c4" stroke-width="1.6"/>
+        <path d="M9.3 12.2l1.9 1.9 3.6-3.9" stroke="#38d6c4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Quell
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#how-it-works">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#databases">Databases</a>
+      <a href="#trust">Trust &amp; limits</a>
+      <a href="https://github.com/richierich1610/quell/blob/main/docs/GETTING_STARTED.md">Docs</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn btn-primary" href="https://github.com/richierich1610/quell">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4.5h14M2 9h14M2 13.5h14"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <div class="eyebrow">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1l6 2.7v4.8c0 3.9-2.6 7.1-6 7.9-3.4-.8-6-4-6-7.9V3.7L8 1z"/></svg>
+      Prebuilt binaries · MIT licensed · no third-party audit yet
+    </div>
+    <h1>Stop a bad statement <span class="accent">before</span> it reaches your database.</h1>
+    <p class="hero-sub">
+      Quell sits between whoever's talking to your database — a person, an app, or an AI agent —
+      and the database itself. It reads every statement first and estimates the real blast radius,
+      how many rows it would actually touch, instead of just pattern-matching the SQL text.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://github.com/richierich1610/quell">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/richierich1610/quell/blob/main/docs/GETTING_STARTED.md">Get started in 5 minutes →</a>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="terminal-title">psql — connected through Quell, not the database directly</span>
+      </div>
+      <div class="terminal-body">
+<span class="prompt">$</span> <span class="cmd">psql "host=localhost port=6432 dbname=app user=appuser"</span>
+<span class="out">app=&gt; DELETE FROM orders WHERE id = 481;</span>
+<span class="ok">DELETE 1</span>
+<span class="out">app=&gt; DELETE FROM orders;</span>
+<span class="err">ERROR:  UPDATE/DELETE without a selective WHERE clause is blocked.</span>
+<span class="err">DETAIL:  matched rule(s): no-unqualified-writes</span>
+<span class="comment"># the qualified delete went through untouched. the other one never reached postgres.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="why">
+    <div class="wrap why-grid">
+      <div class="why-copy">
+        <div class="kicker">Why this exists</div>
+        <h2>"Don't touch prod" is a sentence.<br>It isn't enforcement.</h2>
+        <p>
+          In July 2025, an AI coding agent at Replit ran destructive commands against a live
+          production database <strong>during an active, human-declared code freeze</strong>.
+          It had been told, in plain English, not to. It then told the operator the deletion
+          couldn't be rolled back. That wasn't true.
+        </p>
+        <p>
+          A natural-language instruction is not an enforcement boundary, and an agent's own
+          account of what it did is not a reliable record. Quell closes the part of that gap a
+          database proxy actually can: <strong>freeze mode</strong> is a hard write lockdown that
+          sits outside the policy engine entirely — no rule, scope, or in-SQL override can get
+          around it — and every decision is written to a <strong>tamper-evident, hash-chained
+          audit log</strong>, so nobody has to take an agent's word for what happened.
+        </p>
+      </div>
+      <div class="incident-card">
+        <span class="tag">Real incident, not hypothetical</span>
+        <p><strong>Replit, July 2025.</strong> An AI coding agent ran destructive SQL against a
+        production database mid-freeze, then misreported that the deletion was unrecoverable.</p>
+        <a href="https://incidentdatabase.ai/cite/1152/" target="_blank" rel="noopener">incidentdatabase.ai/cite/1152 ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="how-it-works">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">How it works</div>
+        <h2>Every statement passes through the same pipeline</h2>
+        <p class="section-sub">
+          Whether it comes from <code>psql</code>, an app's connection pool, or an AI agent
+          over MCP — nobody gets a separate, weaker set of guardrails.
+        </p>
+      </div>
+
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="n">01</div>
+          <h4>Listener</h4>
+          <p>Speaks real Postgres or MySQL wire protocol. TLS optional, mixed mode.</p>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="n">02</div>
+          <h4>Analyzer</h4>
+          <p>Parses the statement into a real AST. Spots missing or tautological WHERE clauses.</p>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="n">03</div>
+          <h4>Policy engine</h4>
+          <p>Matches your rules — hot-reloaded, no dropped connections.</p>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="n">04</div>
+          <h4>Estimator</h4>
+          <p>A side connection asks how many rows this would <em>really</em> touch.</p>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="n">05</div>
+          <h4>Audit</h4>
+          <p>Every decision hash-chained to disk, whether or not it was blocked.</p>
+        </div>
+      </div>
+
+      <div class="decision-row">
+        <span class="decision-chip allow">ALLOW</span>
+        <span class="decision-chip warn">WARN</span>
+        <span class="decision-chip hold">HOLD → approval</span>
+        <span class="decision-chip block">BLOCK</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Features</div>
+        <h2>Guardrails that hold up under an incident, not just a demo</h2>
+      </div>
+      <div class="features-grid">
+
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+          <h3>Blast-radius estimation</h3>
+          <p>A perfectly valid <code>DELETE</code> can still wipe 40% of a table. Quell estimates the real row count via <code>EXPLAIN</code> or an exact <code>COUNT</code>, on a dedicated side connection, before deciding.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 10h8M8 14h5"/></svg></div>
+          <h3>Policy engine</h3>
+          <p>A YAML file that hot-reloads without dropping connections. Match on statement kind, table, schema, or a scheduled time window. Scopes and overrides, both fully audited.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
+          <h3>Freeze mode</h3>
+          <p>One command locks down every write across your entire fleet, instantly, independent of any policy rule, scope, or override. Reads keep working.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 9.5-4-1.2-7-5-7-9.5V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3>Tamper-evident audit log</h3>
+          <p>Every record's hash covers the one before it. Editing, deleting, or reordering a past entry becomes detectable, not something you have to hope didn't happen.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 12l3 3 5-6"/><circle cx="12" cy="12" r="9"/></svg></div>
+          <h3>Hold &amp; approve</h3>
+          <p>A risky statement waits, pings Slack or Teams, and resolves through the admin API — approve, deny, or time out to denied. Nobody babysits a queue for this to be safe by default.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg></div>
+          <h3>MCP mode for AI agents</h3>
+          <p><code>run_query</code>, <code>explain_query</code>, <code>list_tables</code> over stdio, through the exact same analyzer, policy, and estimator pipeline the wire proxy uses. No separate, weaker ruleset for agents.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/><path d="M8 8l3 8m5-8l-3 8"/></svg></div>
+          <h3>Runs as a fleet</h3>
+          <p>Add <code>[cluster]</code> and freeze status, pending approvals, and open sessions become shared across every instance — coordinated through the database itself, no new infrastructure.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/><circle cx="12" cy="15" r="1.4" fill="currentColor" stroke="none"/></svg></div>
+          <h3>Client TLS &amp; credential substitution</h3>
+          <p>Terminate client TLS on either protocol. <code>&#36;{VAR_NAME}</code> anywhere in the config file keeps every password and token out of plaintext.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="databases">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Supported databases</div>
+        <h2>Speaks the real wire protocol, not a vendor SDK</h2>
+        <p class="section-sub">Works with any managed or self-hosted Postgres/MySQL, since Quell proxies the actual protocol traffic, not one hosting provider's API.</p>
+      </div>
+
+      <div class="db-wrap">
+        <table class="db-table">
+          <thead>
+            <tr><th>Engine</th><th>Versions tested in CI</th><th>Auth methods</th><th>Blast-radius estimation</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>PostgreSQL</td><td>16, 17</td><td>Any <code>pg_hba.conf</code>-permitted method</td><td><code>EXPLAIN</code> or an exact <code>COUNT</code></td></tr>
+            <tr><td>MySQL</td><td>8.4</td><td><code>mysql_native_password</code>, <code>caching_sha2_password</code></td><td><code>EXPLAIN</code> only</td></tr>
+            <tr><td>MariaDB</td><td>11</td><td>Same MySQL wire protocol</td><td><code>EXPLAIN</code> only</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="db-note">
+        <strong>Not supported yet:</strong> SQL Server / TDS (tracked as an optional milestone,
+        not started, not a gap), Oracle, and other wire protocols. Amazon RDS/Aurora, Google
+        Cloud SQL, Azure Database, and self-hosted instances all work the same way.
+      </p>
+    </div>
+  </section>
+
+  <section id="trust">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Trust &amp; limits</div>
+        <h2>Stated plainly, not left for you to discover later</h2>
+      </div>
+
+      <div class="trust-grid">
+        <div class="trust-card">
+          <h3>What it defends against</h3>
+          <p>Data integrity and availability, from a runaway or malicious statement — human or AI-issued. Not a network security boundary or an access-control system.</p>
+          <a href="https://github.com/richierich1610/quell/blob/main/docs/THREAT_MODEL.md" target="_blank" rel="noopener">Read the threat model ↗</a>
+        </div>
+        <div class="trust-card">
+          <h3>Where it stops</h3>
+          <p>A leaked cloud API token used directly against infrastructure never crosses Quell's listener as SQL. That's a secrets-management problem, not a query-guarding one.</p>
+          <a href="https://github.com/richierich1610/quell/blob/main/docs/LIMITATIONS.md" target="_blank" rel="noopener">Read the limitations ↗</a>
+        </div>
+        <div class="trust-card">
+          <h3>Every release, tracked</h3>
+          <p>What changed in each version, kept as a running record rather than a one-line tag description.</p>
+          <a href="https://github.com/richierich1610/quell/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Read the changelog ↗</a>
+        </div>
+        <div class="trust-card">
+          <h3>Report a bypass privately</h3>
+          <p>Found a way around a block, freeze mode, or the admin API's auth? Report it before it's public.</p>
+          <a href="https://github.com/richierich1610/quell/blob/main/SECURITY.md" target="_blank" rel="noopener">Security policy ↗</a>
+        </div>
+      </div>
+
+      <div class="callout">
+        <strong>No third-party security audit yet</strong>, and no production users beyond the
+        testing that built it. That's worth knowing before you point this at anything that
+        matters — which is exactly why the threat model, the decisions behind it, and its
+        limitations are all documented in detail instead of asking you to take them on faith.
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <div class="kicker" style="text-align:center">Get started</div>
+      <h2>Running in five minutes, against a real test database</h2>
+      <p class="section-sub">
+        <code>docker compose up</code>, point Quell at it, connect with <code>psql</code>
+        instead of the database directly. No signup, no account, nothing to configure beyond
+        one <code>quell.toml</code>.
+      </p>
+      <div class="cta-actions">
+        <a class="btn btn-primary" href="https://github.com/richierich1610/quell/blob/main/docs/GETTING_STARTED.md">
+          Read the getting started guide →
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/richierich1610/quell">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          Star on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="brand">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect width="24" height="24" rx="6" fill="#131722"/>
+            <path d="M12 4l7 3.2v5.6c0 4.6-3 8.3-7 9.2-4-.9-7-4.6-7-9.2V7.2L12 4z" stroke="#38d6c4" stroke-width="1.6"/>
+            <path d="M9.3 12.2l1.9 1.9 3.6-3.9" stroke="#38d6c4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Quell
+        </a>
+        <p>A database guardrail proxy. MIT licensed, built to be evaluated on documented, verifiable behavior, not taken on faith.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Product</h5>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#databases">Supported databases</a></li>
+          <li><a href="#how-it-works">How it works</a></li>
+          <li><a href="#trust">Trust &amp; limits</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Docs</h5>
+        <ul>
+          <li><a href="https://github.com/richierich1610/quell/blob/main/docs/GETTING_STARTED.md">Getting started</a></li>
+          <li><a href="https://github.com/richierich1610/quell/blob/main/docs/POLICY.md">Policy reference</a></li>
+          <li><a href="https://github.com/richierich1610/quell/blob/main/docs/THREAT_MODEL.md">Threat model</a></li>
+          <li><a href="https://github.com/richierich1610/quell/blob/main/docs/BENCHMARKS.md">Benchmarks</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Project</h5>
+        <ul>
+          <li><a href="https://github.com/richierich1610/quell">GitHub</a></li>
+          <li><a href="https://github.com/richierich1610/quell/releases">Releases</a></li>
+          <li><a href="https://github.com/richierich1610/quell/blob/main/SECURITY.md">Security policy</a></li>
+          <li><a href="https://github.com/richierich1610/quell/blob/main/LICENSE">MIT License</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Quell. No production users beyond the testing that built it — said here plainly.</span>
+      <span>Documentation and downloads: <a href="https://github.com/richierich1610/quell" style="color:var(--text-dim)">github.com/richierich1610/quell</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('navToggle').addEventListener('click', function () {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+  document.querySelectorAll('.nav-links a').forEach(function (a) {
+    a.addEventListener('click', function () {
+      document.getElementById('navLinks').classList.remove('open');
+    });
+  });
+</script>
+
+</body>
+</html>
