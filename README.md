@@ -1,6 +1,5 @@
 # Quell
 
-[![Release](https://img.shields.io/github/v/release/richierich1610/quell)](https://github.com/richierich1610/quell/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **[richierich1610.github.io/quell](https://richierich1610.github.io/quell/)**
@@ -72,11 +71,24 @@ list of every connection Quell ever makes is in
 [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md)'s "Network dependencies"
 section.
 
+## Getting access
+
+Binaries and the container image aren't public downloads: everything on
+this page (the docs, the source of the pitch above) is public, but
+running the software itself is by invitation. That's not enforced by
+Quell: nothing at runtime checks a license or calls home (see above).
+It's controlled entirely by who has access to the private repo the
+binaries are published to.
+
+Email richhpalgora1610@gmail.com or [open an issue](https://github.com/richierich1610/quell/issues)
+describing what you're evaluating Quell for, and you'll get an invite.
+Once you have access, downloads work exactly like any other GitHub
+release or container pull, just authenticated.
+
 ## Try it in five minutes
 
 ```bash
-# 1. Download the binary for your platform from the latest release:
-#    https://github.com/richierich1610/quell/releases/latest
+# 1. Get the quell binary for your platform (see "Getting access" above)
 chmod +x quell
 
 # 2. Bring up a test Postgres
@@ -114,9 +126,9 @@ While the proxy is running, its admin API sits on `http://localhost:9091`.
 Try `curl localhost:9091/events` right after the blocked `DELETE` above and
 you'll see exactly what got logged.
 
-A container image is published alongside every release too:
-`ghcr.io/richierich1610/quell`, tagged both `:latest` and per-version
-(e.g. `:v0.1.0`).
+A container image is published alongside every release too, tagged both
+`:latest` and per-version (e.g. `:v0.2.0`) — see "Getting access" below
+for both.
 
 ## How a statement actually gets from client to database
 
@@ -250,12 +262,11 @@ instances; it doesn't shard queries for you. See
 
 ## Deploying it
 
-- **Binary**: download from [Releases](https://github.com/richierich1610/quell/releases),
-  available for Linux x86_64, macOS (Intel and Apple Silicon), and Windows
-  x86_64.
-- **Docker**: `ghcr.io/richierich1610/quell`, a distroless, non-root image,
-  published alongside every release. Bind-mount or ConfigMap-mount
-  `quell.toml` and `policy.yaml` into `/etc/quell`.
+- **Binary**: available for Linux x86_64, macOS (Intel and Apple Silicon),
+  and Windows x86_64. See "Getting access" below.
+- **Docker**: a distroless, non-root image, published alongside every
+  release. Bind-mount or ConfigMap-mount `quell.toml` and `policy.yaml`
+  into `/etc/quell`.
 - **Kubernetes**: [`deploy/k8s-sidecar-example.yaml`](deploy/k8s-sidecar-example.yaml)
   shows Quell as a sidecar in front of an app's own database connection.
 - **systemd**: [`deploy/quell.service`](deploy/quell.service) is a

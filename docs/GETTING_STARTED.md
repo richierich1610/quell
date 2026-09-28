@@ -12,21 +12,19 @@ so stop wherever your setup actually needs to stop.
 
 ## 2. Get the binary
 
-Download the `quell` binary for your platform from the
-[latest release](https://github.com/richierich1610/quell/releases/latest)
-(Linux x86_64, macOS Intel/Apple Silicon, or Windows x86_64), then make it
-executable:
+Binaries and the container image are gated behind a private repo, not a
+public download — see the main [README](../README.md#getting-access) for
+how to request access. Once you have it (Linux x86_64, macOS Intel/Apple
+Silicon, or Windows x86_64), make it executable:
 
 ```bash
 chmod +x quell
 ./quell --version
 ```
 
-A container image is published alongside every release too:
-`ghcr.io/richierich1610/quell:latest` (or a specific version tag, e.g.
-`:v0.1.0`). Everything below uses `./quell`; substitute
-`docker run ghcr.io/richierich1610/quell ...` if you're running the image
-instead.
+Everything below uses `./quell`; substitute
+`docker run ghcr.io/richierich1610/quell ...` if you're running the
+container image instead.
 
 ## 3. Run it against a test database
 
